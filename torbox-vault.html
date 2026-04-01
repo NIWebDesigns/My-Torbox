@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TorBox Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --text-xs:.75rem;--text-sm:.875rem;--text-base:1rem;--text-lg:1.25rem;--text-xl:1.75rem;
+  --sp1:.25rem;--sp2:.5rem;--sp3:.75rem;--sp4:1rem;--sp5:1.25rem;--sp6:1.5rem;--sp8:2rem;--sp10:2.5rem;--sp12:3rem;--sp16:4rem;
+  --r-sm:.375rem;--r-md:.5rem;--r-lg:.75rem;--r-xl:1rem;--r-full:9999px;
+  --tr:180ms cubic-bezier(.16,1,.3,1);
+  --font:'Geist','Inter',system-ui,sans-serif;
+  --mono:'Geist Mono','Fira Code',monospace;
+}
+[data-theme="dark"]{
+  --bg:#0f0f0f;--sur:#161616;--sur2:#1e1e1e;--surOff:#222;--surDyn:#2a2a2a;
+  --div:#282828;--bor:#333;--txt:#e8e8e6;--muted:#888;--faint:#555;
+  --pri:#5b9cf6;--pri-h:#7db3ff;--pri-hl:#1a2a3a;
+  --ok:#4ade80;--warn:#fb923c;--err:#f87171;
+  --sh-sm:0 1px 2px oklch(0 0 0/.3);--sh-md:0 4px 12px oklch(0 0 0/.4);--sh-lg:0 12px 32px oklch(0 0 0/.5);
+}
+[data-theme="light"]{
+  --bg:#f5f5f3;--sur:#fafaf8;--sur2:#fff;--surOff:#efeeeb;--surDyn:#e8e7e4;
+  --div:#ddd;--bor:#ccc;--txt:#1a1a1a;--muted:#666;--faint:#aaa;
+  --pri:#2563eb;--pri-h:#1d4ed8;--pri-hl:#dbeafe;
+  --ok:#16a34a;--warn:#ea580c;--err:#dc2626;
+  --sh-sm:0 1px 2px oklch(.2 .01 80/.06);--sh-md:0 4px 12px oklch(.2 .01 80/.08);--sh-lg:0 12px 32px oklch(.2 .01 80/.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
+body{min-height:100dvh;font-family:var(--font);font-size:var(--text-base);color:var(--txt);background:var(--bg);transition:background var(--tr),color var(--tr);}
+img,video{display:block;max-width:100%;}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit;}
+a{color:inherit;text-decoration:none;}
+:focus-visible{outline:2px solid var(--pri);outline-offset:3px;border-radius:var(--r-sm);}
+
+/* App shell */
+.app{display:flex;flex-direction:column;min-height:100dvh;}
+header{
+  position:sticky;top:0;z-index:100;background:var(--bg);
+  border-bottom:1px solid var(--div);padding:var(--sp3) var(--sp6);
+  display:flex;align-items:center;gap:var(--sp4);
+}
+.logo{display:flex;align-items:center;gap:var(--sp3);font-size:var(--text-sm);font-weight:600;letter-spacing:-.02em;flex-shrink:0;}
+.logo svg{width:30px;height:30px;flex-shrink:0;}
+.hc{flex:1;display:flex;align-items:center;gap:var(--sp3);}
+.sw{flex:1;max-width:400px;position:relative;}
+.sw svg{position:absolute;left:var(--sp3);top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none;}
+#search{width:100%;padding:var(--sp2) var(--sp3) var(--sp2) calc(var(--sp3)*2 + 16px);background:var(--surOff);border:1px solid var(--bor);border-radius:var(--r-full);color:var(--txt);font-size:var(--text-sm);transition:border-color var(--tr),box-shadow var(--tr);}
+#search:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px oklch(from var(--pri) l c h/.15);}
+#search::placeholder{color:var(--faint);}
+.hr{display:flex;align-items:center;gap:var(--sp2);margin-left:auto;}
+.bi{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--muted);transition:background var(--tr),color var(--tr);}
+.bi:hover{background:var(--surOff);color:var(--txt);}
+.tabs{display:flex;background:var(--sur);border-bottom:1px solid var(--div);padding:0 var(--sp6);overflow-x:auto;}
+.tab{padding:var(--sp3) var(--sp5);font-size:var(--text-sm);font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:color var(--tr),border-color var(--tr);}
+.tab.active{color:var(--pri);border-bottom-color:var(--pri);}
+.tab:hover:not(.active){color:var(--txt);}
+main{flex:1;padding:var(--sp6);max-width:1100px;margin:0 auto;width:100%;}
+
+/* Modal */
+.mbg{position:fixed;inset:0;z-index:200;background:oklch(0 0 0/.7);display:flex;align-items:center;justify-content:center;padding:var(--sp4);}
+.mbg.hidden{display:none;}
+.modal{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r-xl);padding:var(--sp8);width:100%;max-width:440px;box-shadow:var(--sh-lg);}
+.modal h2{font-size:var(--text-lg);font-weight:600;margin-bottom:var(--sp2);}
+.modal p{font-size:var(--text-sm);color:var(--muted);margin-bottom:var(--sp6);}
+.fg{display:flex;flex-direction:column;gap:var(--sp2);margin-bottom:var(--sp4);}
+.fg label{font-size:var(--text-sm);font-weight:500;}
+.fg input[type="password"],.fg input[type="text"]{padding:var(--sp3) var(--sp4);background:var(--surOff);border:1px solid var(--bor);border-radius:var(--r-md);color:var(--txt);font-size:var(--text-sm);font-family:var(--mono);transition:border-color var(--tr);width:100%;}
+.fg input:focus{outline:none;border-color:var(--pri);}
+.fg-row{display:flex;flex-direction:row;align-items:center;gap:var(--sp2);margin-bottom:var(--sp4);}
+.fg-row input[type="checkbox"]{width:16px;height:16px;accent-color:var(--pri);}
+.fg-row label{font-size:var(--text-sm);cursor:pointer;}
+.btn-p{width:100%;padding:var(--sp3) var(--sp4);background:var(--pri);color:#fff;border-radius:var(--r-md);font-weight:600;font-size:var(--text-sm);transition:background var(--tr),transform var(--tr);}
+.btn-p:hover{background:var(--pri-h);}
+.btn-p:active{transform:scale(.98);}
+.hint{font-size:var(--text-xs);color:var(--faint);margin-top:var(--sp3);}
+.hint a{color:var(--pri);}
+
+/* Grid */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp4);}
+.sec-hdr h2{font-size:var(--text-lg);font-weight:600;}
+.badge{background:var(--surOff);color:var(--muted);font-size:var(--text-xs);font-family:var(--mono);padding:var(--sp1) var(--sp2);border-radius:var(--r-full);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:var(--sp4);}
+.card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r-lg);padding:var(--sp4) var(--sp5);cursor:pointer;transition:background var(--tr),border-color var(--tr),box-shadow var(--tr),transform var(--tr);display:flex;flex-direction:column;gap:var(--sp3);}
+.card:hover{background:var(--sur2);border-color:var(--pri);box-shadow:var(--sh-md);transform:translateY(-1px);}
+.card:active{transform:translateY(0);}
+.card-top{display:flex;align-items:flex-start;gap:var(--sp3);}
+.fic{flex-shrink:0;color:var(--pri);margin-top:2px;}
+.fname{font-size:var(--text-sm);font-weight:500;line-height:1.4;flex:1;word-break:break-word;}
+.cmeta{display:flex;gap:var(--sp3);flex-wrap:wrap;}
+.chip{font-size:var(--text-xs);font-family:var(--mono);color:var(--faint);display:flex;align-items:center;gap:4px;}
+.dot{width:6px;height:6px;border-radius:var(--r-full);flex-shrink:0;}
+.dot.ready{background:var(--ok);}.dot.dl{background:var(--warn);}.dot.err{background:var(--err);}
+
+/* Folder view */
+.bk{display:inline-flex;align-items:center;gap:var(--sp2);font-size:var(--text-sm);color:var(--muted);margin-bottom:var(--sp6);padding:var(--sp2) var(--sp3);border-radius:var(--r-md);transition:background var(--tr),color var(--tr);}
+.bk:hover{background:var(--surOff);color:var(--txt);}
+.flist{display:flex;flex-direction:column;gap:var(--sp2);}
+.fi{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r-md);padding:var(--sp3) var(--sp4);display:flex;align-items:center;gap:var(--sp3);transition:background var(--tr),border-color var(--tr);}
+.fi.play{cursor:pointer;}
+.fi.play:hover{background:var(--sur2);border-color:var(--pri);}
+.fi.play:active{background:var(--pri-hl);}
+.fi-ic{flex-shrink:0;}
+.fi-ic.v{color:var(--pri);}.fi-ic.o{color:var(--faint);}
+.fn{flex:1;font-size:var(--text-sm);word-break:break-all;}
+.fsz{font-size:var(--text-xs);font-family:var(--mono);color:var(--faint);flex-shrink:0;}
+.ph{font-size:var(--text-xs);color:var(--pri);flex-shrink:0;opacity:0;transition:opacity var(--tr);}
+.fi.play:hover .ph{opacity:1;}
+
+/* Player */
+.pv{display:flex;flex-direction:column;gap:var(--sp4);}
+.ptitle{font-size:var(--text-lg);font-weight:600;line-height:1.3;word-break:break-word;}
+.psub{font-size:var(--text-sm);color:var(--muted);margin-top:var(--sp1);}
+.vc{background:#000;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-lg);position:relative;aspect-ratio:16/9;}
+.vc video{width:100%;height:100%;display:block;}
+.vl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;flex-direction:column;gap:var(--sp4);color:var(--muted);font-size:var(--text-sm);}
+.vl.hidden,.ve.hidden{display:none;}
+.ve{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;flex-direction:column;gap:var(--sp3);color:var(--err);font-size:var(--text-sm);text-align:center;padding:var(--sp6);}
+.spin{width:40px;height:40px;border:3px solid var(--bor);border-top-color:var(--pri);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.oeb{margin-top:var(--sp2);padding:var(--sp2) var(--sp4);background:var(--sur);color:var(--txt);border:1px solid var(--bor);border-radius:var(--r-md);font-size:var(--text-sm);font-weight:500;transition:background var(--tr);}
+.oeb:hover{background:var(--sur2);}
+
+/* States */
+.loading{display:flex;align-items:center;justify-content:center;padding:var(--sp16);flex-direction:column;gap:var(--sp4);color:var(--muted);font-size:var(--text-sm);}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:var(--sp16) var(--sp8);color:var(--muted);}
+.empty svg{color:var(--faint);margin-bottom:var(--sp4);}
+.empty h3{color:var(--txt);font-size:var(--text-base);font-weight:600;margin-bottom:var(--sp2);}
+.empty p{font-size:var(--text-sm);max-width:36ch;}
+
+/* Toast */
+.tw{position:fixed;bottom:var(--sp6);right:var(--sp6);z-index:300;display:flex;flex-direction:column;gap:var(--sp2);}
+.toast{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r-md);padding:var(--sp3) var(--sp4);font-size:var(--text-sm);box-shadow:var(--sh-lg);animation:sli .2s cubic-bezier(.16,1,.3,1);max-width:340px;}
+.toast.err{border-color:var(--err);color:var(--err);}
+@keyframes sli{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.hidden{display:none!important;}
+@media(max-width:640px){header{padding:var(--sp3) var(--sp4);}main{padding:var(--sp4);}.grid{grid-template-columns:1fr;}.sw{max-width:none;}}
+</style>
+</head>
+<body>
+<div class="mbg" id="modal">
+  <div class="modal">
+    <svg style="margin-bottom:var(--sp4);width:36px;height:36px" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#5b9cf6" fill-opacity=".15"/><path d="M8 10h16M8 16h10M8 22h12" stroke="#5b9cf6" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#5b9cf6"/><path d="M22.5 22l1 1 2-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h2>TorBox Vault</h2>
+    <p>Enter your TorBox API key to browse and stream your files. It stays in memory only — never stored or sent anywhere except TorBox's API.</p>
+    <div class="fg"><label for="ki">API Key</label><input type="password" id="ki" placeholder="tb-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false"></div>
+    <div class="fg-row"><input type="checkbox" id="sk"><label for="sk">Show key</label></div>
+    <button class="btn-p" id="cb" onclick="connect()">Connect</button>
+    <p class="hint">Find your key at <a href="https://torbox.app/settings" target="_blank" rel="noopener">torbox.app/settings</a>.<br>⚠️ If hosting on GitHub Pages, do <strong>not</strong> hard-code your key in the HTML file.</p>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#5b9cf6" fill-opacity=".15"/><path d="M8 10h16M8 16h10M8 22h12" stroke="#5b9cf6" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#5b9cf6"/><path d="M22.5 22l1 1 2-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      TorBox Vault
+    </div>
+    <div class="hc">
+      <div class="sw">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="search" id="search" placeholder="Search…" oninput="onSearch(this.value)" autocomplete="off">
+      </div>
+    </div>
+    <div class="hr">
+      <button class="bi" onclick="refresh()" title="Refresh" aria-label="Refresh"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+      <button class="bi" id="tt" onclick="toggleTheme()" aria-label="Toggle theme"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+      <button class="bi" onclick="document.getElementById('modal').classList.remove('hidden')" title="Change key" aria-label="Change API key"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></button>
+    </div>
+  </header>
+  <div class="tabs">
+    <button class="tab active" data-tab="torrents" onclick="switchTab('torrents')">Torrents</button>
+    <button class="tab" data-tab="usenet" onclick="switchTab('usenet')">Usenet</button>
+    <button class="tab" data-tab="webdl" onclick="switchTab('webdl')">Web DL</button>
+  </div>
+  <main id="mc"></main>
+</div>
+<div class="tw" id="tw"></div>
+
+<script>
+const BASE='https://api.torbox.app/v1/api';
+let KEY='',tab='torrents',data={torrents:[],usenet:[],webdl:[]},view='grid',folder=null,file=null,streamUrl=null,q='';
+
+function toggleTheme(){
+  const h=document.documentElement,n=h.getAttribute('data-theme')==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  document.getElementById('tt').innerHTML=n==='dark'
+    ?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+    :'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+}
+
+document.getElementById('sk').addEventListener('change',function(){document.getElementById('ki').type=this.checked?'text':'password';});
+document.getElementById('ki').addEventListener('keydown',e=>{if(e.key==='Enter')connect();});
+
+async function connect(){
+  const k=document.getElementById('ki').value.trim();
+  if(!k){toast('Enter an API key',true);return;}
+  const btn=document.getElementById('cb');btn.textContent='Connecting…';btn.disabled=true;
+  try{
+    const r=await fetch(BASE+'/user/me',{headers:{Authorization:'Bearer '+k}});
+    const j=await r.json();
+    if(!j.success)throw new Error(j.detail||'Invalid key');
+    KEY=k;document.getElementById('modal').classList.add('hidden');
+    toast('Connected as '+(j.data?.email||'user'));refresh();
+  }catch(e){toast(e.message||'Connection failed',true);}
+  finally{btn.textContent='Connect';btn.disabled=false;}
+}
+
+function switchTab(t){tab=t;view='grid';folder=null;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));render();}
+
+async function fetchList(type){
+  const ep={torrents:'torrents',usenet:'usenet',webdl:'webdl'}[type];
+  const r=await fetch(BASE+'/'+ep+'/mylist?bypass_cache=true',{headers:{Authorization:'Bearer '+KEY}});
+  const j=await r.json();if(!j.success)throw new Error(j.detail);return j.data||[];
+}
+
+async function refresh(){
+  if(!KEY){document.getElementById('modal').classList.remove('hidden');return;}
+  view='grid';folder=null;
+  document.getElementById('mc').innerHTML='<div class="loading"><div class="spin"></div><span>Loading library…</span></div>';
+  const [a,b,c]=await Promise.allSettled([fetchList('torrents'),fetchList('usenet'),fetchList('webdl')]);
+  data.torrents=a.status==='fulfilled'?(a.value||[]):[];
+  data.usenet=b.status==='fulfilled'?(b.value||[]):[];
+  data.webdl=c.status==='fulfilled'?(c.value||[]):[];
+  render();
+}
+
+async function getStream(type,iid,fid){
+  const epMap={torrents:['torrents','torrent_id'],usenet:['usenet','usenet_id'],webdl:['webdl','web_id']};
+  const[ep,param]=epMap[type];
+  const url=BASE+'/'+ep+'/requestdl?token='+KEY+'&'+param+'='+iid+'&file_id='+fid+'&zip_link=false';
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+KEY}});
+  const j=await r.json();if(!j.success)throw new Error(j.detail||'No stream URL');
+  return j.data;
+}
+
+const VEXTS=new Set(['mp4','mkv','avi','mov','wmv','flv','webm','m4v','mpg','mpeg','ts','m2ts','vob','ogv','3gp']);
+function isVid(n){return VEXTS.has((n||'').split('.').pop().toLowerCase());}
+function fmt(b){if(!b)return'—';if(b<1024)return b+' B';if(b<1<<20)return(b/1024).toFixed(1)+' KB';if(b<1<<30)return(b/1048576).toFixed(1)+' MB';return(b/1073741824).toFixed(2)+' GB';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function render(){
+  if(view==='player'){renderPlayer();return;}
+  if(view==='folder'){renderFolder();return;}
+  renderGrid();
+}
+
+function filtered(){
+  const items=data[tab]||[];
+  if(!q)return items;
+  const lq=q.toLowerCase();
+  return items.filter(i=>(i.name||'').toLowerCase().includes(lq));
+}
+
+function renderGrid(){
+  const items=filtered();
+  const mc=document.getElementById('mc');
+  if(!items.length){
+    const t=data[tab].length===0?{t:'No content yet',m:'Your '+tab+' list is empty.'}:{t:'No results',m:'Nothing matched your search.'};
+    mc.innerHTML=`<div class="empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><h3>${t.t}</h3><p>${t.m}</p></div>`;
+    return;
+  }
+  const cards=items.map(item=>{
+    const st=item.download_finished?'ready':item.download_state==='downloading'?'dl':'ready';
+    const fc=(item.files||[]).length,vc=(item.files||[]).filter(f=>isVid(f.name||f.short_name)).length;
+    return`<div class="card" onclick="openFolder(${item.id})" title="${esc(item.name||'Unnamed')}">
+      <div class="card-top">
+        <svg class="fic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <span class="fname">${esc(item.name||'Unnamed')}</span>
+      </div>
+      <div class="cmeta">
+        <span class="chip"><span class="dot ${st}"></span>${st==='dl'?'Downloading':'Ready'}</span>
+        ${fc?`<span class="chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${fc} file${fc!==1?'s':''}</span>`:''}
+        ${vc?`<span class="chip" style="color:var(--pri)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>${vc} video${vc!==1?'s':''}</span>`:''}
+        <span class="chip">${fmt(item.size)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  mc.innerHTML=`<div class="sec-hdr"><h2 style="display:flex;align-items:center;gap:.5rem">${tab.charAt(0).toUpperCase()+tab.slice(1)}<span class="badge">${items.length}</span></h2></div><div class="grid">${cards}</div>`;
+}
+
+function openFolder(id){
+  folder=(data[tab]||[]).find(i=>i.id===id);
+  if(!folder)return;view='folder';renderFolder();
+}
+
+function renderFolder(){
+  const item=folder,files=item.files||[];
+  const mc=document.getElementById('mc');
+  const rows=files.map(f=>{
+    const n=f.name||f.short_name||'File '+f.id,v=isVid(n);
+    return`<div class="fi ${v?'play':''}" ${v?`onclick="play(${item.id},${f.id},'${esc(n).replace(/'/g,"\'")}')"`:''}> 
+      <svg class="fi-ic ${v?'v':'o'}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        ${v?'<rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>':'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>'}
+      </svg>
+      <span class="fn">${esc(n)}</span>
+      <span class="fsz">${fmt(f.size)}</span>
+      ${v?'<span class="ph">▶ Play</span>':''}
+    </div>`;
+  }).join('')||`<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><h3>No files</h3><p>No files listed yet.</p></div>`;
+  const vc=files.filter(f=>isVid(f.name||f.short_name)).length;
+  mc.innerHTML=`<button class="bk" onclick="goGrid()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back to ${tab}</button>
+  <div class="sec-hdr"><h2 style="font-size:var(--text-base);word-break:break-word">${esc(item.name||'Unnamed')}</h2><span class="badge">${files.length} files · ${vc} videos</span></div>
+  <div class="flist">${rows}</div>`;
+}
+
+async function play(iid,fid,name){
+  view='player';file={iid,fid,name};streamUrl=null;renderPlayer();
+  try{
+    const u=await getStream(tab,iid,fid);streamUrl=u;
+    const v=document.getElementById('mv'),l=document.getElementById('vl');
+    if(v&&l){v.src=u;l.classList.add('hidden');v.play().catch(()=>{});}
+  }catch(e){
+    const l=document.getElementById('vl'),er=document.getElementById('ve');
+    if(l)l.classList.add('hidden');
+    if(er){er.classList.remove('hidden');er.querySelector('.em').textContent=e.message||'Stream failed';}
+    toast('Stream error: '+e.message,true);
+  }
+}
+
+function renderPlayer(){
+  const f=file;
+  document.getElementById('mc').innerHTML=`<div class="pv">
+    <div>
+      <button class="bk" onclick="goFolder()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back to folder</button>
+      <div class="ptitle">${esc(f?f.name:'')}</div>
+      <div class="psub">${esc(folder?folder.name:'')}</div>
+    </div>
+    <div class="vc">
+      <video id="mv" controls preload="metadata"></video>
+      <div class="vl" id="vl"><div class="spin"></div><span>Getting stream URL…</span></div>
+      <div class="ve hidden" id="ve">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="em">Could not load video</span>
+        <button class="oeb" onclick="openExt()">Open direct link in new tab</button>
+      </div>
+    </div>
+    <p style="font-size:var(--text-xs);color:var(--faint)">MKV/TS may not play in-browser. Use the direct link button to open in VLC or another player.</p>
+  </div>`;
+}
+
+function openExt(){if(streamUrl)window.open(streamUrl,'_blank');else toast('URL not ready yet',true);}
+function goGrid(){view='grid';folder=null;render();}
+function goFolder(){view='folder';renderFolder();}
+function onSearch(v){q=v;if(view==='grid')renderGrid();}
+
+function toast(msg,isErr=false){
+  const w=document.getElementById('tw'),el=document.createElement('div');
+  el.className='toast'+(isErr?' err':'');el.textContent=msg;
+  w.appendChild(el);setTimeout(()=>el.remove(),3500);
+}
+
+document.getElementById('mc').innerHTML=`<div class="empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><h3>Connect to TorBox</h3><p>Enter your API key to browse your library.</p></div>`;
+</script>
+</body>
+</html>
